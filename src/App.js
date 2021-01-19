@@ -1,7 +1,12 @@
 import React from "react";
 import "./App.css";
 import TorusSdk from "@toruslabs/torus-direct-web-sdk";
-import EthUtil from "ethereumjs-util";
+import {
+  ecsign,
+  hashPersonalMessage,
+  toRpcSig
+} from "ethereumjs-util";
+import axios from 'axios';
 
 const GOOGLE = "google";
 const FACEBOOK = "facebook";
@@ -67,7 +72,15 @@ const verifierMap = {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { selectedVerifier: GOOGLE, torusdirectsdk: null, loginHint: "", consoleText: "" };
+    this.state = {
+      selectedVerifier: GOOGLE,
+      torusdirectsdk: null,
+      loginHint: "",
+      consoleText: "",
+      accessToken: ""
+    };
+
+    this.signFx = this.signFx.bind(this)
   }
 
   componentDidMount = async () => {
@@ -75,7 +88,6 @@ class App extends React.Component {
       const torusdirectsdk = new TorusSdk({
         baseUrl: `${window.location.origin}/serviceworker`,
         enableLogging: true,
-        proxyContractAddress: "0x4023d2a0D330bF11426B12C6144Cfb96B7fa6183", // details for test net
         network: "testnet", // details for test net
       });
 
@@ -100,12 +112,48 @@ class App extends React.Component {
         clientId,
         jwtParams,
       });
-      console.log('loginDetails ==> ', loginDetails)
-      this.setState({ consoleText: typeof loginDetails === "object" ? JSON.stringify(loginDetails) : loginDetails });
+
+      const { publicAddress, privateKey } = loginDetails;
+      // sign data
+      const data = this.signFx(publicAddress.toLowerCase(), privateKey);
+
+      // login to nft server
+      axios({
+        method: 'POST',
+        url: 'http://localhost:35001/nft-admin/public/login-torus',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data
+      }).then((rs) => {
+        console.log('rs ', rs)
+        this.setState({
+          accessToken: rs.data.result.accessToken,
+          consoleText: typeof loginDetails === "object" ? JSON.stringify(loginDetails) : loginDetails
+        });
+      }).catch(error => {
+        console.log('error ', error)
+      })
+
+      
     } catch (error) {
       console.error(error, "login caught");
     }
   };
+
+  signFx = (address, privateKey) => {
+    const timeStamp = new Date().getTime();
+    const seed = `${address}_${timeStamp}`;
+
+    const key = Buffer.from(privateKey, 'hex');
+    const sig = ecsign(hashPersonalMessage(Buffer.from(seed)), key);
+    const sign = toRpcSig(sig.v, sig.r, sig.s);
+    return {
+      "address": address,
+      "sign": sign,
+      "timestamp": timeStamp
+    }
+  }
 
   _loginToConnectionMap = () => {
     const { loginHint } = this.state;
@@ -124,7 +172,7 @@ class App extends React.Component {
   };
 
   render() {
-    const { selectedVerifier, loginHint, consoleText } = this.state;
+    const { selectedVerifier, loginHint, consoleText, accessToken } = this.state;
     let emailField = "";
 
     if (selectedVerifier === PASSWORDLESS) {
@@ -155,6 +203,9 @@ class App extends React.Component {
         </form>
         <div className="console">
           <p>{consoleText}</p>
+        </div>
+        <div className="access-token">
+          <p>{accessToken}</p>
         </div>
       </div>
     );

@@ -1,9 +1,10 @@
 {
-  "name": "login-torus-demo",
+  "name": "react-app",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@toruslabs/torus-direct-web-sdk": "^3.5.5",
+    "@toruslabs/torus-direct-web-sdk": "^3.5.7",
+    "axios": "0.21.1",
     "ethereumjs-util": "^7.0.7",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -16,7 +17,7 @@
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
-    "extends": "login-torus-demo"
+    "extends": "react-app"
   },
   "browserslist": {
     "production": [

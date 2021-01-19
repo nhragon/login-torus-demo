@@ -7,6 +7,22 @@ body {
   color: #2c3e50;
 }
 
+.access-token {
+  border: 1px solid black;
+  height: 80px;
+  padding: 2px;
+  position: absolute;
+  text-align: left;
+  width: calc(100% - 20px);
+  border-radius: 5px;
+}
+.access-token::before {
+  content: "Access Token :";
+  position: absolute;
+  top: -20px;
+  font-size: 12px;
+}
+
 .console {
   border: 1px solid black;
   height: 80px;
